@@ -60,4 +60,80 @@ public class AccountTest {
     final List<Account> accounts = entityManager.createQuery(criteriaQuery).getResultList();
    }
 
+   @Test
+   public void join() {
+     final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+     final CriteriaQuery<Account> criteriaQuery = cb.createQuery(Account.class);
+
+     final Root<Account> accountRoot = criteriaQuery.from(Account.class);               // FROM
+
+     accountRoot.join("studies");
+
+     criteriaQuery.select(accountRoot);
+
+     final List<Account> accounts = entityManager.createQuery(criteriaQuery).getResultList();
+   }
+
+  @Test
+  public void leftJoin() {
+    final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    final CriteriaQuery<Account> criteriaQuery = cb.createQuery(Account.class);
+
+    final Root<Account> accountRoot = criteriaQuery.from(Account.class);               // FROM
+
+    accountRoot.join("studies", JoinType.LEFT);
+
+    criteriaQuery
+        .select(accountRoot);
+
+    final List<Account> accounts = entityManager.createQuery(criteriaQuery).getResultList();
+  }
+
+  @Test
+  public void subquery() {
+    final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    final CriteriaQuery<Account> criteriaQuery = cb.createQuery(Account.class);
+
+    final Subquery<Double> subquery = criteriaQuery.subquery(Double.class);
+
+    final Root<Account> a2 = subquery.from(Account.class);
+
+    subquery.select(cb.avg(a2.<Integer>get("age")));
+
+    final Root<Account> a = criteriaQuery.from(Account.class);
+    criteriaQuery.select(a)
+        .where(cb.ge(a.<Integer>get("age"), subquery));
+
+    final List<Account> accounts = entityManager.createQuery(criteriaQuery).getResultList();
+  }
+
+  @Test
+  public void in() {
+    final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    final CriteriaQuery<Account> criteriaQuery = cb.createQuery(Account.class);
+
+    final Root<Account> accountRoot = criteriaQuery.from(Account.class);               // FROM
+
+    criteriaQuery
+        .select(accountRoot)
+        .where(cb.in(accountRoot.get("username")).value("hotire"));
+
+    final List<Account> accounts = entityManager.createQuery(criteriaQuery).getResultList();
+  }
+
+  @Test
+  public void parameter() {
+    final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    final CriteriaQuery<Account> criteriaQuery = cb.createQuery(Account.class);
+
+    final Root<Account> accountRoot = criteriaQuery.from(Account.class);               // FROM
+
+    criteriaQuery
+        .select(accountRoot)
+        .where(cb.equal(accountRoot.get("username"), cb.parameter(String.class, "usernameParameter")));
+
+    final List<Account> accounts = entityManager.createQuery(criteriaQuery)
+        .setParameter("usernameParameter", "회원1")
+        .getResultList();
+  }
 }

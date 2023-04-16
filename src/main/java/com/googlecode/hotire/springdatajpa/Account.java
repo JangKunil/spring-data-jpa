@@ -31,6 +31,8 @@ public class Account {
 
   private String password;
 
+  private Integer age;
+
   public Account(String username) {
     this.username = username;
   }
@@ -49,7 +51,7 @@ public class Account {
   })
   private Address officeAddress;
 
-  @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+  @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   private Set<Study> studies = new HashSet<>();
 
   public Account addStudy(Study study) {
