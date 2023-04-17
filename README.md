@@ -223,6 +223,23 @@ enum Role {
 
 ## Value 
 
+
+### 값 타입의 특징 
+
+- 식별자가 없다.
+
+- 생명 주기를 엔티티에 의존한다. 
+
+- 공유하지 않는 것이 안전하다. 
+  - 대신에 값을 복사해서 사용하자.
+  - 오직 하나의 주인만이 관리해야 한다.
+  - 불변으로 만드는 것이 안전하다.
+
+- 값 타입 콜렉션 사용시, 수정이 일어나면 전부 삭제하고 다시 저장한다.
+  
+  
+
+
 ### Type 종류
 
 - 기본 Type (String, Integer, Boolean..)
@@ -471,7 +488,260 @@ JPA 2.1 이후부터 JOIN ON을 지원한다.
     - 둘 이상의 컬렉션을 패치 할 수 없다. 
     - 컬렉션을 패치 조인하면 페이징 API를 사용할 수 없다. (일대다가 아닌 일대일, 다대일은 가능)
     
+    
+### 경로 표현식
 
+경로 표현식을 쉽게 설명하면, .(점)을 찍어 객체 그래프를 탐색하는 것이다.
+
+m.username, m.team 모두 경로 표현식을 사용한 예다.
+
+
+- 상태 필드 : 단순히 값을 저장하기 위한 필드
+
+- 연관 필드 : 연관관계를 위한 필드, 임베디드 타입 포함
+  - 단일 값 연관 필드 : @ManyToOne, @OneToOne 와 같이 대상이 엔티티
+  - 컬레션 값 연관 필드 : @OneToMany, @ManyToMany 와 같이 대상이 컬렉션
+  
+  
+
+상태 필드 경로는 겸로 탐색의 끝이다. 더는 탐색할 수 없다. 단일, 컬렉션 값 연관 경로는 묵시적으로 내부 조인이 일어난다.
+
+단일 값은 계속해서 탐색하지만, 컬렉션은 탐색이 불가능하다. 단 FROM절에서 조인을 통해 별칭을 얻으면 별칭으로 탐색이 가능하다.
+
+
+1. 상태 필드 경로 탐색 
+
+- JPQL
+```
+select m.username, m,age from Member m
+```
+
+- SQL
+```
+select m.username, m.age from Member m
+```
+  
+
+2. 단일 값 연관 경로 탐색
+
+- JPQL
+
+```
+select o.member from Order o
+```          
+
+- SQL
+
+```
+select m.*
+from Order o 
+  inner join Member m on o.member_id = m.id   
+
+```
+단일 값 연관 필드로 경로 탐색을 하면 SQL에서 내부 조인이 발생한다.
+
+명시적으로 JOIN을 직접 적어줄 수 있다. 묵시적으로 조인이 일어나면 무조건 내부조인!!
+
+```
+select m from Member m join m.team t
+```
+ex) 명시적 조인
+          
+
+2. 컬렉션 값 연관 경로 탐색
+
+JPQL을 다루면서 가장 많이 하는 실수 중 하나는 컬렉션 값에서 경로 탐색을 시도하는 것이다. 
+
+
+```
+select t.members from Team t  // 성공 
+select t.members.username from Team t // 실패 
+```
+
+t.members 처럼 컬렉션까지는 경로 탐색이 가능하지만, t.members.username처럼 컬렉션에서 경로 탐색을 시도하는 것은 불가능하다.
+만약 컬렉션에서 경로 탐색을 하고 싶으면 새로운 별칭을 획득해야 한다.
+
+```
+select m.username from Team t join t.members m
+``` 
+
+- 경로 탐색시 주의 사항
+  - 항생 내부 조인이다.
+  - 컬렉션은 경로 탐색의 끝이다. 경로 탐색을 하기 위해선 명시적으로 조인해서 별칭을 얻어야 한다.
+  - 경로 탐색은 주로 SELECT, WHERE 절에서 사용하지만 묵시적 조인으로 인해 SQL FROM 절에 영향을 준다.
+  - 조인이 성능적으로 차지하는 부분은 크다. 또한 묵시적 조인이 일어나는 상황을 한 눈에 파악하기 힘들다. 
+    성능이 중요한 부분이면 명시적 조인을 사용하자. 
+        
+
+### 서브 쿼리
+
+JPQL도 SQL처럼 서브 쿼리를 지원한다. 단 몇가지 제약이 있는데 서브 쿼리를 WHERE, HAVING 절에만 사용할 수 있고
+
+SELECT, FROM 절에는 사용할 수 없다. 
+
+
+- ex) 나이가 평균보다 많은 회원을 찾는다. 
+```
+select m from Member m 
+where m.age > (select  avg(m2.age) from Member m2)
+```
+
+- ex) 한 건이라도 주문한 고객을 찾는다. 
+
+```
+select m From Member m 
+where (select count(o) from Order o where m = o.member) > 0
+```
+
+참고로 이 쿼리는 다음처럼 컬렉션 값 연관 필드의 size 기능을 사용해도 같은 결과를 얻을 수 있다. (실행되는 SQL도 같다.)
+
+```
+select m from Member m 
+where m.orders.size > 0
+```
+
+
+- 서브 쿼리 함수 : 서브 쿼리는 다음 함수들과 같이 사용할 수 있다. 
+  - [NOT] EXISTS (subquery)
+    서브 쿼리에 결과가 존재하면 참이다. 
+    
+    ex) 팀A 소속인 회원
+    ```
+    select m from Member m 
+    where exists (select t from m.team t where t.name = '팀A')
+    ```
+  - [ALL | ANY | SOME] (subquery)
+    - ALL : 조건을 모두 만족하면 참이다. 
+    - ANY 혹은 SOME : 조건을 하나라도 만족하면 참이다. 
+    
+    ex) 전체 상품 각각의 재고보다 주문량이 많은 주문들 
+    ```
+    select o from Order o
+    where o.orderAmount > ALL (select p.stockAmount from Product p)
+    ```
+    
+    ex) 어떤 팀이든 팀에 소속된 회원
+    ```
+    select m from Member m
+    where m.team = ANY (select t from Team t)
+    ```
+  - [NOT] IN (subquery)
+    서브쿼리의 결과 중 하나라도 같은 것이 있으면 참이다. 
+    
+    ex) 20세 이상을 보유한 팀 
+    ```
+    select t from Team t 
+    where t IN (select t2 from Team t2 JOIN t2.members m2 where m2.age >= 20)
+    ```
+    
+### 조건식 
+
+- 타입 표현 
+  - 문자 : ''작은 따옴표 사이에 표현한다. 
+  - 숫자 : L, D ,F 사용한다.
+  - 날짜 : {d '2012-10-01'}, {t '10-11-11'}, {ts '2012-03-04 10-11-11.123'}
+  - Enum : 패키지명을 포함한 전체 이름을 사용해야 한다. com.github.hotire.ADMIN
+  - 엔티티 타입 : 엔티티의 타입을 표현한다. 주로 상속과 관련해 사용 TYPE(m) = Member
+
+
+- 연산자 우선 순위
+  1. 경로 탐색 연산 (.)
+  2. 수학 연산 : +, -(단항 연산자), *, /, +, -
+  3. 비교 연산 : =, >, <, <>, [NOT] BETWEEN, LIKE, IN, IS [NOT] NUL | EMPTY, EXISTS 
+  4. 논리 연산 : NOT, AND, OR
+
+- 컬렉션 식 : 컬렉션에만 사용하는 특별한 기능이다. 
+  - 빈 컬렉션 비교식 : {컬렉션 값 연관 경로} IS [NOT] EMPTY
+  
+  ex) 주문이 하나라도 있는 회원 조회  
+  ```
+  select m from Member m where m.orders is not empty
+  ```
+  
+  - 컬렉션의 멤버 식 : 엔티티나 값이 컬렉션에 포함되어 있으면 참 
+  ```
+  select t from Team t 
+  where :memberParam member of t.members
+  ```
+  
+- 스칼라 식 : 숫자, 문자, 날짜 case, 엔티티 타입 기본적인 타입들을 말한다. 
+  - https://joont92.github.io/jpa/JPQL/ 너무 많으니... 여기서 보자 
+  
+- CASE 식 : 특정 조건에 따라 분기할 떄 CASE 식을 사용한다. 4가지 종류가 있다. 
+  - https://joont92.github.io/jpa/JPQL/ 이것도 마찬가지..
+  
+
+### 다형성 쿼리 
+
+JPQL로 부모 엔티티를 조회하면 그 자식 엔티티도 함께 조회한다. 
+
+- TYPE : 상속 구조에서 조회 대상을 특정 자식 타입으로 한정할 때 주로 사용한다. 
+  ```
+  select i from Item i 
+  where type(i) IN (Book, Movie)
+  ```
+
+- TREAT (JPA 2.1) : 자바의 타입 캐스팅과 비슷하다. 상숙 구조에서 부모 타입을 특정 자식 타입으로
+  다룰 때 사용한다. 
+  ```
+   select i from Itme i where treat(i as Book).author = 'kim'
+  ```
+ 
+
+### 사용자 정의 함수 (JPA 2.1)
+
+function_invocation:: = FUNCTION(function_name {, funtion_arg}*)
+
+```
+select function('group_concat', i.name) from Item i 
+``` 
+
+### NULL 
+
+- 조건을 만족하는 데이터가 하나도 없으면 NULL 이다.
+- NULL은 알 수 없는 값이다. NULL과 모든 수학적 계산 결과는 NULL이다. 
+- NULL == NULL은 NULL 이다. 
+- NULL IS NULL은 참이다. 
+
+
+### Named 쿼리 : 정적 쿼리 
+
+JPQL 쿼리는 크게 동적 쿼리와 정적 쿼리로 나눌 수 있다. 
+
+- 동적 쿼리 : em.createQuery(...) 처럼 JPQL을 문자로 완성해서 직접 넘기는 것을 동적 쿼리
+
+- 정적 쿼리 : 미리 정의한 쿼리에 이름을 부여해서 필요할 떄 사용하는 쿼리 
+
+
+Named 쿼리는 애플리케이션 로딩 시점에 JPQL 문법을 체크하고 머리 파싱해둔다. 
+
+따라서 오류를 빨리 확인할 수 있고, 사용하는 시점에 파싱된 결과를 재사용하므로 성능상 이점이 있다. 
+
+- Named 쿼리는 영속성 유닛 단위로 관리되므로 충돌을 방지하기 위해 엔티티 이름을 앞에 통상적으로 준다.
+- XML / Annotation 같은 설정이 있으면 XML이 우선권을 갖는다. 
+
+
+## Criteria 
+
+JPQL을 생성하는 빌더 클래스다. 문자가 아닌 코드로 JPQL을 작성할 수 있다.
+
+코드이기 때문에, 런타임 시점이 아닌 컴파일 시점에 오류를 발견할 수 있다.
+
+- Annotation Processor 기능을 통해 만들어진 메타 모델을 사용하면 온전히 코드만 사용해서 쿼리를 작성할 수 있다.
+
+
+```
+  @Test
+  public void findAll() {
+    final CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    final CriteriaQuery<Account> criteriaQuery = cb.createQuery(Account.class);
+
+    final Root<Account> accountRoot = criteriaQuery.from(Account.class);  // FROM
+    criteriaQuery.select(accountRoot);                                    // SELECT
+
+    final TypedQuery<Account> query = entityManager.createQuery(criteriaQuery);
+    final List<Account> accounts = query.getResultList();
+  }
 ```
 - Query Root 
   - 쿼리 루트는 조회의 시작점이다. 
@@ -495,7 +765,7 @@ m.join("team",JoinType.LEFT);   // 외부 조인
 m.fetch("team", JoinType.LEFT)  // 패치 조인 
 ```
  
-## QueryDSL
+## Querydsl
 
 JPQL, SQL과 같은 쿼리를 생성할 수 있도록 해 주는 프레임워크
 
@@ -508,30 +778,6 @@ Querydsl의 핵심 원칙은 타입 안정성(Type safety)이다. 도메인 타�
 QueryDSL은 컴파일 시점에 문법 오류를 발견할 수 있고, 동적 쿼리이다.
 
 - reference : http://www.querydsl.com/static/querydsl/4.0.1/reference/ko-KR/html_single/
-
-### 기본 Q 생성
-
-사용하기 편하게 기본 인스턴스를 보관하고 있다. 
-
-같은 엔티티를 조인하거나 서브쿼리에 사용하면 같은 별칭이 사용되므로, 이때는 별칭을 지정해서 사용해야 한다.
-
-
-### 수정, 삭제 배치 쿼리 
-
-QueryDSL 도 수정, 삭제 같은 배치 쿼리를 지원한다. JPQL 배치 쿼리와 같이 영속성 컨텍스트를 무시하고
-
-데이터베이스를 직접 쿼리한다는 점에 유의하자. 
-
-
-## 네이티브 SQL
-
-JPQL은 표준 SQL 지원하는 대부분의 문법과 SQL 함수들을 지원하지만 특정 데이터베이스에 종속적인 기능은 지원하지 않는다. 
-
-- 특정 데이터베이스만 지원하는 함수 
-
-- 인라인 뷰, UNION, INTERSECT 
-
-- 스토어드 프로시저  
 
 
 ## N + 1 Problem
@@ -553,16 +799,3 @@ https://jojoldu.tistory.com/165
 엔티티들의 Fetch 전략을 컴파일 시점에 결정하게 되는데, 
 
 런타임 시점에 관여한다.
-
-
-
-## 기타 
-
-### 벌크 연산 
-
-엔티티를 수정하려면 영속성 컨텍스트의 변경 감지, 병합, 삭제하려면 엔티티 매니저의 remove() 
-
-메서드를 사용한다. 하지만 이 방법으로 수백만개 이상의 엔티티를 하나씩 처리하기에는 시간이 오래 걸린다.
-
-이럴 떄 필요한 것이 벌크 연산이다.
-
