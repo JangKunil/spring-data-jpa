@@ -1,21 +1,24 @@
 package com.googlecode.hotire.springdatajpa;
 
-import java.util.HashSet;
+import static org.assertj.core.api.Java6Assertions.assertThat;
+
 import java.util.List;
 import java.util.Set;
 import javax.annotation.PostConstruct;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import javax.persistence.EntityManager;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
 @DataJpaTest
-public class AccountTest{
+class AccountTest {
 
   @Autowired
   private AccountRepository accountRepository;
+
+  @Autowired
+  private EntityManager entityManager;
 
   @PostConstruct
   public void config () {
@@ -29,39 +32,54 @@ public class AccountTest{
     account2.addStudy(Study.createInstance("hello5"));
     account2.addStudy(Study.createInstance("hello6"));
     accountRepository.saveAndFlush(account2);
+    Account account3 = new Account();
+    account3.setUsername("hotire");
+    account3.setAge(1);
+    accountRepository.saveAndFlush(account3);
     System.out.println(accountRepository.findAll().size());
   }
 
   @Test
-  public void find() {
+  void find() {
     Account result = accountRepository.findById(1L).orElseThrow();
     System.out.println(result.getStudies());
   }
 
   @Test
-  public void findAll() {
+  void findAll() {
     List<Account> accounts = accountRepository.findAll();
     System.out.println("accounts size : " + accounts.size());
     accounts.forEach(account -> System.out.println("study : " + account.getStudies().size()));
   }
 
   @Test
-  public void findAllJoinFetch(){
+  void findAllJoinFetch(){
     Set<Account> accounts = accountRepository.findAllJoinFetch();
     System.out.println("accounts size : " + accounts.size());
     accounts.forEach(account -> System.out.println(account.getStudies()));
   }
 
   @Test
-  public void findAllJoinLeft() {
+  void findAllJoinLeft() {
     List<Account> accounts = accountRepository.findAllJoinLeft();
     System.out.println("accounts size : " + accounts.size());
     accounts.forEach(account -> System.out.println(account.getStudies()));
   }
 
   @Test
-  public void findAllEntityGraph(){
+  void findAllEntityGraph(){
     List<Account> accounts = accountRepository.findAllEntityGraph();
     accounts.forEach(account -> System.out.println(account.getStudies()));
+  }
+
+  @Test
+  void bulk() {
+    final String qlString = "update Account a "
+        + "set a.age = a.age + 1"
+        + "where a.username = :username";
+
+    entityManager.createQuery(qlString)
+        .setParameter("username", "hotire")
+        .executeUpdate();
   }
 }
