@@ -835,3 +835,7 @@ https://jojoldu.tistory.com/165
 메서드를 사용한다. 하지만 이 방법으로 수백만개 이상의 엔티티를 하나씩 처리하기에는 시간이 오래 걸린다.
 
 이럴 떄 필요한 것이 벌크 연산이다.
+
+
+- 벌크 연산은 영속성 컨텍스트를 무시하고 데이터베이스에 직접 쿼리한다는 점에 주의해야 한다. 
+  - [dirtyReadByBulk](https://github.com/hotire/spring-data-jpa/blob/master/src/test/java/com/googlecode/hotire/springdatajpa/AccountTest.java)

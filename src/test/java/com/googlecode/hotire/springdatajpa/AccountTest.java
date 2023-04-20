@@ -82,4 +82,18 @@ class AccountTest {
         .setParameter("username", "hotire")
         .executeUpdate();
   }
+
+  @DisplayName("bulk 연산은 데이터베이스에 직접 접근하여 entityManager, 영속성 컨텍스트를 무시한다.")
+  @Test
+  void dirtyReadByBulk() {
+    final List<Account> accounts = entityManager.createQuery("select a from Account a where a.username = :name", Account.class)
+        .setParameter("name", "hotire")
+        .getResultList();
+
+    accounts.forEach(account -> assertThat(account.getAge()).isEqualTo(1));
+
+    bulk();
+
+    accounts.forEach(account -> assertThat(account.getAge()).isEqualTo(1));
+  }
 }
