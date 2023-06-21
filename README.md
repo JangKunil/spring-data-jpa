@@ -1036,13 +1036,9 @@ JPA 예외는 크게 2가지로 나눌수 있다.
 않도록 일정 단위마다 데이터베이스에 플러시하고 초기화해야 한다. 너무 많은 엔티티가 쌓여 메모리 부족 오류가 발생할 수 있다. 
 
 
-## DDD 
 
-https://www.baeldung.com/spring-data-ddd
 
-### Aggregates
 
-### DomainEvents
 
    
   
