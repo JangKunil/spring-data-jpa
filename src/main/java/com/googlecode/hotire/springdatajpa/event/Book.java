@@ -1,11 +1,12 @@
 package com.googlecode.hotire.springdatajpa.event;
 
-import org.springframework.data.domain.AbstractAggregateRoot;
-
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
-@javax.persistence.Entity
+import org.springframework.data.domain.AbstractAggregateRoot;
+
+@Entity
 public class Book extends AbstractAggregateRoot<Book> implements BaseEntity {
     @Id
     @GeneratedValue

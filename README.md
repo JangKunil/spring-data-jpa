@@ -1,6 +1,23 @@
 # Spring-Data-Jpa
 
-Study
+# Core
+
+## JpaRepository
+
+### JpaRepository 등록 원리
+https://blog.naver.com/gngh0101/222028728936
+
+## DDD 
+
+https://www.baeldung.com/spring-data-ddd
+
+### Aggregates
+
+### DomainEvents
+
+
+
+# Study
 
 ## ORM(Object-Relational Mapping)
 
@@ -1036,9 +1053,24 @@ JPA 예외는 크게 2가지로 나눌수 있다.
 않도록 일정 단위마다 데이터베이스에 플러시하고 초기화해야 한다. 너무 많은 엔티티가 쌓여 메모리 부족 오류가 발생할 수 있다. 
 
 
+## Envers
 
-
-
-
+Hibernate Envers는 컬럼의 생성, 수정, 삭제 변경 이력을 남길 수 있다.
+JPA의 Audit기능과 같이 사용한다. 변경사항을 히스토리로 남기기 때문에 변경 사항 추적할 수 있다.
    
-  
+
+https://www.baeldung.com/database-auditing-jpa
+
+### Rev
+
+수정 번호로 revision pk
+
+### REVTYPE
+
+revision type 생성 수정 삭제가 enum으로 관리되며 숫자로 표시된다.
+
+- 0 : insert
+
+- 1 :  update
+
+- 2 : delete

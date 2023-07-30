@@ -1,17 +1,18 @@
 package com.googlecode.hotire.springdatajpa;
 
+import static org.assertj.core.api.Java6Assertions.assertThat;
+
+import java.util.List;
+import java.util.Set;
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
+
+import com.googlecode.hotire.springdatajpa.n_p.AccountRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import java.util.List;
-import java.util.Set;
-
-import static org.assertj.core.api.Java6Assertions.assertThat;
 
 @DataJpaTest
 class AccountTest {
