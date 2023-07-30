@@ -1,13 +1,12 @@
 package com.googlecode.hotire.springdatajpa;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import org.hibernate.Session;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 
 @RunWith(SpringRunner.class)
 @DataJpaTest
