@@ -10,7 +10,8 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.googlecode.hotire.springdatajpa.Entity;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -18,14 +19,15 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @Getter
 @MappedSuperclass
-@EntityListeners(AuditingEntityListener.class)
-public class AuditEntity<ID extends Serializable> extends Entity<ID>{
+@EntityListeners(CustomAuditingEntityListener.class)
+public class AuditEntity<ID extends Serializable> extends Entity<ID> implements AuditableEntity {
 
     @CreatedDate
     private OffsetDateTime createdDate;
-
     @LastModifiedDate
     private OffsetDateTime modifiedDate;
+
+    private OffsetDateTime remoteDate;
 
     @LastModifiedBy
     private String updatedBy;
@@ -51,5 +53,10 @@ public class AuditEntity<ID extends Serializable> extends Entity<ID>{
     public AuditEntity<ID> setCreatedBy(final String createdBy) {
         this.createdBy = createdBy;
         return this;
+    }
+
+    @Override
+    public boolean isAuditable() {
+        return true;
     }
 }
