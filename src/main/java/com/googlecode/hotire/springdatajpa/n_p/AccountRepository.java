@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
-import com.googlecode.hotire.springdatajpa.Account;
 import com.googlecode.hotire.springdatajpa.dsl.AccountRepositoryCustom;
+import com.googlecode.hotire.springdatajpa.ex.Account;
 
 /**
  * N +1
@@ -22,6 +22,9 @@ public interface AccountRepository extends JpaRepository<Account, Long>, Account
    */
   @Query("select a from Account a join fetch a.studies")
   Set<Account> findAllJoinFetch();
+  
+  @Query("select a from Account a join fetch a.studies")
+  List<Account> findAllByCartasian();
 
   @Query("select a from Account a left outer join Study s on a.id = s.owner.id")
   List<Account> findAllJoinLeft();
@@ -32,4 +35,9 @@ public interface AccountRepository extends JpaRepository<Account, Long>, Account
   @EntityGraph(attributePaths = "studies")
   @Query("select a from Account a")
   List<Account> findAllEntityGraph();
+
+  @EntityGraph(attributePaths = "studies")
+  List<Account> findByUsername(String userName);
+
+
 }
